@@ -7,7 +7,6 @@ class HashTableEntry:
     def __init__(self, key, value):
         self.key = key
         self.value = value
-        self.next = None
         
     def __str__(self):
         return f"<HashTableEntry('{self.key}', '{self.value}')>"
@@ -34,6 +33,10 @@ class HashTable:
         self.data = [LinkedList()] * capacity
         self.capacity = capacity
         
+        # when the hashtable's load factor is greater
+        # than this, it should be resized
+        self.resizeWhenLoadFactorGreaterThan = 0.7
+        
         # the count of items in the HT
         self.count = 0
 
@@ -48,7 +51,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return len(self.data)
 
 
     def get_load_factor(self):
@@ -57,7 +60,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return self.count / self.capacity
 
 
     def fnv1(self, key):
@@ -115,7 +118,13 @@ class HashTable:
                 # HashTableEntry which also has value (with a key)
                 return # we are done
         
-        # If the given key does not exist, add it to the head of the  LL
+        # The key was not found anywhere. Now move on to ADDING
+        # an entry--but beforehand, let's see if we need to resize
+        # the hashtable
+        
+        if self.get_load_factor() > self.resizeWhenLoadFactorGreaterThan:
+            # the load is too much--double the size of the HT
+            self.resize(self.capacity * 2)
         
         # create the node
         node = Node(HashTableEntry(key, value))
@@ -207,64 +216,59 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
-
+        # set the new capacity
+        self.capacity = new_capacity
+        # set the placeholder for the resized HT
+        new_data = []
+        # loop thru the current HT and add all its
+        # values to new_data
+        for ll_at_index in self.data:
+            cur = ll_at_index.head
+            while cur is not None:
+                kv = {}
+                kv["key"] = cur.value.key
+                kv["value"] = cur.value.value
+                new_data.append(kv)
+                cur = cur.next
+                                
+        # resize data
+        self.data = [LinkedList()] * self.capacity
+        for kv in new_data:
+            self.put(kv["key"], kv["value"])
 
 
 if __name__ == "__main__":
     ht = HashTable(8)
-    print(ht.count)
     
-    ht.put("key_1", "value_1")
-    print(ht.get("key_1"))
-    print(ht.count)
-    ht.put("key_2", "value_2")
-    
-    print(ht.get("key_2"))
-    print(ht.count)
-    
-    
-    ht.delete("key_2")
-    print(ht.get("key_2"))
-    print(ht.count)
-    
-    ht.delete("key_1")
-    print(ht.get("key_1"))
-    print(ht.count)
-    
-    print(ht.delete("key_1")) # already deleted
-    print(ht.count)
-    
-    # ht.put("line_1", "'Twas brillig, and the slithy toves")
-    # ht.put("line_2", "Did gyre and gimble in the wabe:")
-    # ht.put("line_3", "All mimsy were the borogoves,")
-    # ht.put("line_4", "And the mome raths outgrabe.")
-    # ht.put("line_5", '"Beware the Jabberwock, my son!')
-    # ht.put("line_6", "The jaws that bite, the claws that catch!")
-    # ht.put("line_7", "Beware the Jubjub bird, and shun")
-    # ht.put("line_8", 'The frumious Bandersnatch!"')
-    # ht.put("line_9", "He took his vorpal sword in hand;")
-    # ht.put("line_10", "Long time the manxome foe he sought--")
-    # ht.put("line_11", "So rested he by the Tumtum tree")
-    # ht.put("line_12", "And stood awhile in thought.")
+    ht.put("line_1", "'Twas brillig, and the slithy toves")
+    ht.put("line_2", "Did gyre and gimble in the wabe:")
+    ht.put("line_3", "All mimsy were the borogoves,")
+    ht.put("line_4", "And the mome raths outgrabe.")
+    ht.put("line_5", '"Beware the Jabberwock, my son!')
+    ht.put("line_6", "The jaws that bite, the claws that catch!")
+    ht.put("line_7", "Beware the Jubjub bird, and shun")
+    ht.put("line_8", 'The frumious Bandersnatch!"')
+    ht.put("line_9", "He took his vorpal sword in hand;")
+    ht.put("line_10", "Long time the manxome foe he sought--")
+    ht.put("line_11", "So rested he by the Tumtum tree")
+    ht.put("line_12", "And stood awhile in thought.")
 
     print("")
 
     # Test storing beyond capacity
-    # for i in range(1, 13):
-    #     print(ht.get(f"line_{i}"))
-    print(ht.data)
+    for i in range(1, 13):
+        print(ht.get(f"line_{i}"))
 
     # Test resizing
-    # old_capacity = ht.get_num_slots()
-    # ht.resize(ht.capacity * 2)
-    # new_capacity = ht.get_num_slots()
+    old_capacity = ht.get_num_slots()
+    ht.resize(ht.capacity * 2)
+    new_capacity = ht.get_num_slots()
 
-    # print(f"\nResized from {old_capacity} to {new_capacity}.\n")
+    print(f"\nResized from {old_capacity} to {new_capacity}.\n")
 
-    # # Test if data intact after resizing
-    # for i in range(1, 13):
-    #     print(ht.get(f"line_{i}"))
+    # Test if data intact after resizing
+    for i in range(1, 13):
+        print(ht.get(f"line_{i}"))
 
     print("")
 
