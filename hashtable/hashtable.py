@@ -123,6 +123,8 @@ class HashTable:
         # that is at the hashed key's index
         index = self.fnv1(key)
         self.data[index].insert_at_head(node)
+        # increment the HT item count
+        self.count += 1
         
     def __find_node_with_key_in_ll(self, linkedlist, key): 
         cur = linkedlist.head
@@ -150,20 +152,25 @@ class HashTable:
         cur = ll_at_index.head
         
         # Special case - deleting the head
-        if cur.value.key == key:
-            ll_at_index.head = ll_at_index.head.next
-            return cur
-        
-        # General case - deleting any node that is not the head
-        prev = cur
-        cur = cur.next
-        while cur is not None:
-            if cur.value.key == key: # the node to delete
-                prev.next = cur.next # removes all refs to this node for GC
+        if cur is not None:
+            if cur.value.key == key:
+                ll_at_index.head = ll_at_index.head.next
+                # decrement the HT item count
+                self.count -= 1
                 return cur
-            else:
-                prev = prev.next
-                cur = cur.next
+        
+            # General case - deleting any node that is not the head
+            prev = cur
+            cur = cur.next
+            while cur is not None:
+                if cur.value.key == key: # the node to delete
+                    prev.next = cur.next # removes all refs to this node for GC
+                    # decrement the HT item count
+                    self.count -= 1
+                    return cur
+                else:
+                    prev = prev.next
+                    cur = cur.next
                 
         return None
 
@@ -206,14 +213,27 @@ class HashTable:
 
 if __name__ == "__main__":
     ht = HashTable(8)
+    print(ht.count)
     
     ht.put("key_1", "value_1")
-    ht.put("key_2", "value_2")
     print(ht.get("key_1"))
+    print(ht.count)
+    ht.put("key_2", "value_2")
+    
     print(ht.get("key_2"))
+    print(ht.count)
+    
     
     ht.delete("key_2")
     print(ht.get("key_2"))
+    print(ht.count)
+    
+    ht.delete("key_1")
+    print(ht.get("key_1"))
+    print(ht.count)
+    
+    print(ht.delete("key_1")) # already deleted
+    print(ht.count)
     
     # ht.put("line_1", "'Twas brillig, and the slithy toves")
     # ht.put("line_2", "Did gyre and gimble in the wabe:")
