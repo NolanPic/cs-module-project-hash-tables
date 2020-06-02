@@ -1,3 +1,5 @@
+from linkedlist import Node, LinkedList
+
 class HashTableEntry:
     """
     Linked List hash table key/value pair
@@ -6,6 +8,9 @@ class HashTableEntry:
         self.key = key
         self.value = value
         self.next = None
+        
+    def __str__(self):
+        return f"<HashTableEntry('{self.key}', '{self.value}')>"
 
 
 # Hash table can't have fewer than this many slots
@@ -24,9 +29,13 @@ class HashTable:
         # ensure we are not below capacity
         if capacity < MIN_CAPACITY:
             capacity = MIN_CAPACITY
-        # set up storage
-        self.data = [None] * capacity
+            
+        # set up storage using a Linked List
+        self.data = [LinkedList()] * capacity
         self.capacity = capacity
+        
+        # the count of items in the HT
+        self.count = 0
 
 
     def get_num_slots(self):
@@ -75,13 +84,14 @@ class HashTable:
         # Your code here
 
 
+    # this is not being used anywhere--I am taking care
+    # of the % in the hash itself
     def hash_index(self, key):
         """
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
         return self.fnv1(key) % self.capacity
-        #return self.djb2(key) % self.capacity
 
     def put(self, key, value):
         """
@@ -91,10 +101,36 @@ class HashTable:
 
         Implement this.
         """
-        # create the entry
-        entry = HashTableEntry(key, value)
-        # insert the entry at the key's hashed index
-        self.data[self.fnv1(key)] = entry
+        # Search through the list and find if this key exists.
+        # If it does, overwrite the value stored there
+        
+        # First, loop thru hashtable data
+        for index in self.data:
+            node_with_key = self.__find_node_with_key_in_ll(index, key)
+            if node_with_key is not None:
+                # A node with this key exists--simply update
+                # its value
+                node_with_key.value.value = value
+                # ^^^ value.value because the node's value is a
+                # HashTableEntry which also has value (with a key)
+                return # we are done
+        
+        # If the given key does not exist, add it to the head of the  LL
+        
+        # create the node
+        node = Node(HashTableEntry(key, value))
+        # insert the node at the head of the linked list
+        # that is at the hashed key's index
+        index = self.fnv1(key)
+        self.data[index].insert_at_head(node)
+        
+    def __find_node_with_key_in_ll(self, linkedlist, key): 
+        cur = linkedlist.head
+        while cur is not None:
+            if cur.value.key == key:
+                return cur
+            cur = cur.next
+        return None
 
 
     def delete(self, key):
@@ -105,7 +141,31 @@ class HashTable:
 
         Implement this.
         """
-        self.put(key, None)
+        
+        # get the index of this key
+        index = self.fnv1(key)
+        # find the ll at this index
+        ll_at_index = self.data[index]
+        # get the head
+        cur = ll_at_index.head
+        
+        # Special case - deleting the head
+        if cur.value.key == key:
+            ll_at_index.head = ll_at_index.head.next
+            return cur
+        
+        # General case - deleting any node that is not the head
+        prev = cur
+        cur = cur.next
+        while cur is not None:
+            if cur.value.key == key: # the node to delete
+                prev.next = cur.next # removes all refs to this node for GC
+                return cur
+            else:
+                prev = prev.next
+                cur = cur.next
+                
+        return None
 
 
     def get(self, key):
@@ -116,7 +176,21 @@ class HashTable:
 
         Implement this.
         """
-        return self.data[self.fnv1(key)].value
+        # get the index of this key
+        index = self.fnv1(key)
+        # find the ll at this index
+        ll_at_index = self.data[index]
+        # find the node with this key in this ll
+        found_node = self.__find_node_with_key_in_ll(ll_at_index, key)
+        
+        if found_node:
+            return found_node.value.value
+        # ^^^^ value.value because find_node returns a node with
+        # a HashTableEntry as its value, which in turn has
+        # its own value
+        
+        # not found
+        return None
 
 
     def resize(self, new_capacity):
@@ -133,26 +207,33 @@ class HashTable:
 if __name__ == "__main__":
     ht = HashTable(8)
     
-    ht.put("line_1", "'Twas brillig, and the slithy toves")
-    ht.put("line_2", "Did gyre and gimble in the wabe:")
-    ht.put("line_3", "All mimsy were the borogoves,")
-    ht.put("line_4", "And the mome raths outgrabe.")
-    ht.put("line_5", '"Beware the Jabberwock, my son!')
-    ht.put("line_6", "The jaws that bite, the claws that catch!")
-    ht.put("line_7", "Beware the Jubjub bird, and shun")
-    ht.put("line_8", 'The frumious Bandersnatch!"')
-    ht.put("line_9", "He took his vorpal sword in hand;")
-    ht.put("line_10", "Long time the manxome foe he sought--")
-    ht.put("line_11", "So rested he by the Tumtum tree")
-    ht.put("line_12", "And stood awhile in thought.")
+    ht.put("key_1", "value_1")
+    ht.put("key_2", "value_2")
+    print(ht.get("key_1"))
+    print(ht.get("key_2"))
+    
+    ht.delete("key_2")
+    print(ht.get("key_2"))
+    
+    # ht.put("line_1", "'Twas brillig, and the slithy toves")
+    # ht.put("line_2", "Did gyre and gimble in the wabe:")
+    # ht.put("line_3", "All mimsy were the borogoves,")
+    # ht.put("line_4", "And the mome raths outgrabe.")
+    # ht.put("line_5", '"Beware the Jabberwock, my son!')
+    # ht.put("line_6", "The jaws that bite, the claws that catch!")
+    # ht.put("line_7", "Beware the Jubjub bird, and shun")
+    # ht.put("line_8", 'The frumious Bandersnatch!"')
+    # ht.put("line_9", "He took his vorpal sword in hand;")
+    # ht.put("line_10", "Long time the manxome foe he sought--")
+    # ht.put("line_11", "So rested he by the Tumtum tree")
+    # ht.put("line_12", "And stood awhile in thought.")
 
     print("")
-    
-    ht.delete("line_6")
 
     # Test storing beyond capacity
-    for i in range(1, 13):
-        print(ht.get(f"line_{i}"))
+    # for i in range(1, 13):
+    #     print(ht.get(f"line_{i}"))
+    print(ht.data)
 
     # Test resizing
     # old_capacity = ht.get_num_slots()
